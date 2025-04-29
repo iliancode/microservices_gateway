@@ -96,6 +96,15 @@ app.get('/users/all', async (req, res) => {
     }
   });
 
+//Route pour get les infos d'un restaurant par son id 
+  app.get('/users/:id', async (req, res) => {
+    try {
+      const response = await axios.get(`${process.env.USERS_SERVICE_URL}/users/${req.params.id}`);
+      res.json(response.data); 
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching restaurants', error: error.message });
+    }
+  });
 // Démarrer le serveur
 app.listen(port, () => {
   console.log(`API Gateway is running on http://localhost:${port}`);
