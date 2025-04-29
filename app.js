@@ -5,6 +5,7 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const app = express();
 const port = 3000;  // L'API Gateway tourne sur ce port
+const cors = require('cors');
 
 // Middleware pour parser le corps des requêtes en JSON
 app.use(express.json());
