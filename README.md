@@ -1,4 +1,4 @@
-# 🍔 Projet Uber Eats - Architecture Microservices
+# 🍔 Projet EsgEats - Architecture Microservices
 
 Ce projet est une application de commande de repas en ligne inspirée d'Uber Eats. Il est construit avec une **architecture microservices** et une **API Gateway** centralisée pour orchestrer les échanges entre les services.
 
