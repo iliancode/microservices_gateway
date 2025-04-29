@@ -45,6 +45,18 @@ app.use('/orders', proxy(process.env.ORDERS_SERVICE_URL, {
   }
 }));
 
+app.use('/menu', proxy(process.env.MENU_SERVICE_URL, {
+    proxyReqPathResolver: req => {
+      return `/menu${req.url}`;
+    },
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+      if (srcReq.headers['authorization']) {
+        proxyReqOpts.headers['authorization'] = srcReq.headers['authorization'];
+      }
+      return proxyReqOpts;
+    }
+  }));
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`API Gateway running on http://localhost:${PORT}`);
