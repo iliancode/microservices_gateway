@@ -20,7 +20,7 @@ app.use('/users', proxy(process.env.USERS_SERVICE_URL, {
     return proxyReqOpts;
   }
 }));
-
+/**
 app.use('/delivery', proxy(process.env.DELIVERY_SERVICE_URL, {
   proxyReqPathResolver: req => {
     return `/delivery${req.url}`;
@@ -32,7 +32,7 @@ app.use('/delivery', proxy(process.env.DELIVERY_SERVICE_URL, {
     return proxyReqOpts;
   }
 }));
-
+**/
 app.use('/orders', proxy(process.env.ORDERS_SERVICE_URL, {
   proxyReqPathResolver: req => {
     return `/orders${req.url}`;
