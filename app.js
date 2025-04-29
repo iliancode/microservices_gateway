@@ -8,6 +8,7 @@ const port = 3000;  // L'API Gateway tourne sur ce port
 
 // Middleware pour parser le corps des requêtes en JSON
 app.use(express.json());
+app.use(cors());
 
 // Middleware pour vérifier le token JWT
 const verifyToken = (req, res, next) => {
