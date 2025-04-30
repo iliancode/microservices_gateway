@@ -41,7 +41,6 @@ app.get('/orders', async (req, res) => {
     console.warn('Primary /orders failed, trying fallback /users/orders');
 
     try {
-      console.log(`${process.env.USERS_SERVICE_URL}users/orders`);
       const fallbackResponse = await fetch(`${process.env.USERS_SERVICE_URL}users/orders`, { headers });
 
       if (!fallbackResponse.ok) {
