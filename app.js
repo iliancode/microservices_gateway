@@ -1,9 +1,10 @@
 const express = require('express');
 const proxy = require('express-http-proxy');
 const dotenv = require('dotenv');
-dotenv.config({ path: '.env.local' });
+dotenv.config();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 
 const app = express();
 app.use(express.json());
@@ -20,42 +21,53 @@ app.use('/users', proxy(process.env.USERS_SERVICE_URL, {
     return proxyReqOpts;
   }
 }));
-/**
-app.use('/delivery', proxy(process.env.DELIVERY_SERVICE_URL, {
-  proxyReqPathResolver: req => {
-    return `/delivery${req.url}`;
-  },
-  proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-    if (srcReq.headers['authorization']) {
-      proxyReqOpts.headers['authorization'] = srcReq.headers['authorization'];
+
+app.get('/orders', async (req, res) => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': req.headers['authorization'] || '',
+  };
+
+  try {
+    const response = await fetch(`${process.env.ORDERS_SERVICE_URL}/orders`, { headers });
+
+    if (!response.ok) {
+      throw new Error(`Primary service failed with status ${response.status}`);
     }
-    return proxyReqOpts;
-  }
-}));
-**/
-app.use('/orders', proxy(process.env.ORDERS_SERVICE_URL, {
-  proxyReqPathResolver: req => {
-    return `/orders${req.url}`;
-  },
-  proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-    if (srcReq.headers['authorization']) {
-      proxyReqOpts.headers['authorization'] = srcReq.headers['authorization'];
+
+    const data = await response.json();
+    res.status(200).json(data);
+  } catch (err) {
+    console.warn('Primary /orders failed, trying fallback /users/orders');
+
+    try {
+      console.log(`${process.env.USERS_SERVICE_URL}users/orders`);
+      const fallbackResponse = await fetch(`${process.env.USERS_SERVICE_URL}users/orders`, { headers });
+
+      if (!fallbackResponse.ok) {
+        throw new Error(`Fallback service also failed with status ${fallbackResponse.status}`);
+      }
+
+      const fallbackData = await fallbackResponse.json();
+      res.status(200).json(fallbackData);
+    } catch (fallbackErr) {
+      console.error('Both services failed:', fallbackErr.message);
+      res.status(502).json({ message: 'Les deux services /orders et /users/orders ont échoué' });
     }
-    return proxyReqOpts;
   }
-}));
+});
 
 app.use('/menu', proxy(process.env.MENU_SERVICE_URL, {
-    proxyReqPathResolver: req => {
-      return `/menu${req.url}`;
-    },
-    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-      if (srcReq.headers['authorization']) {
-        proxyReqOpts.headers['authorization'] = srcReq.headers['authorization'];
-      }
-      return proxyReqOpts;
+  proxyReqPathResolver: req => {
+    return `/menu${req.url}`;
+  },
+  proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+    if (srcReq.headers['authorization']) {
+      proxyReqOpts.headers['authorization'] = srcReq.headers['authorization'];
     }
-  }));
+    return proxyReqOpts;
+  }
+}));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
