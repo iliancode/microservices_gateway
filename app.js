@@ -20,71 +20,78 @@ app.use('/users', proxy(process.env.USERS_SERVICE_URL, {
   }
 }));
 
-// Handler avec fallback pour /orders
-app.get('/orders', async (req, res) => {
+// Handler avec fallback pour /orders/*
+app.use('/orders', async (req, res) => {
   const headers = {
-    'Content-Type': 'application/json',
     'Authorization': req.headers['authorization'] || '',
   };
 
+  console.log('🔐 Token forwarded to fallback:', headers.Authorization);
+  const primaryUrl = new URL(req.originalUrl, process.env.ORDERS_SERVICE_URL);
+  const fallbackUrl = new URL(`/users${req.originalUrl}`, process.env.USERS_SERVICE_URL);
+
   try {
-    const response = await fetch(`${process.env.ORDERS_SERVICE_URL}/orders`, { headers });
+    console.log('➡️  Trying primary:', primaryUrl.href);
+    const response = await fetch(primaryUrl.href, { headers });
 
     if (!response.ok) {
       throw new Error(`Primary service failed with status ${response.status}`);
     }
 
     const data = await response.json();
-    return res.status(200).json(data);
+    return res.status(response.status).json(data);
   } catch (err) {
-    console.warn('Primary /orders failed, trying fallback /users/orders');
-
+    console.warn('⚠️ Primary /orders failed:', err.message);
     try {
-      const fallbackResponse = await fetch(`${process.env.USERS_SERVICE_URL}/users/orders`, { headers });
+      console.log('🔁 Trying fallback:', fallbackUrl.href);
+      const fallbackResponse = await fetch(fallbackUrl.href, { headers });
 
       if (!fallbackResponse.ok) {
-        throw new Error(`Fallback service also failed with status ${fallbackResponse.status}`);
+        throw new Error(`Fallback service failed with status ${fallbackResponse.status}`);
       }
 
       const fallbackData = await fallbackResponse.json();
-      return res.status(200).json(fallbackData);
+      return res.status(fallbackResponse.status).json(fallbackData);
     } catch (fallbackErr) {
-      console.error('Both services failed:', fallbackErr.message);
+      console.error('❌ Both /orders and fallback failed:', fallbackErr.message);
       return res.status(502).json({ message: 'Les deux services /orders et /users/orders ont échoué' });
     }
   }
 });
 
-// Handler avec fallback pour /menu
-app.get('/menu', async (req, res) => {
+// Handler avec fallback pour /menu/*
+app.use('/menu', async (req, res) => {
   const headers = {
-    'Content-Type': 'application/json',
     'Authorization': req.headers['authorization'] || '',
   };
 
+  const primaryUrl = new URL(req.originalUrl, process.env.MENU_SERVICE_URL);
+  const fallbackUrl = new URL(`/users${req.originalUrl}`, process.env.USERS_SERVICE_URL);
+
   try {
-    const response = await fetch(`${process.env.MENU_SERVICE_URL}/menu`, { headers });
+    console.log('➡️  Trying primary:', primaryUrl.href);
+    const response = await fetch(primaryUrl.href, { headers });
 
     if (!response.ok) {
       throw new Error(`Primary service failed with status ${response.status}`);
     }
 
     const data = await response.json();
-    return res.status(200).json(data);
+    return res.status(response.status).json(data);
   } catch (err) {
-    console.warn('Primary /menu failed, trying fallback /users/menu');
-
+    console.warn('⚠️ Primary /menu failed:', err.message);
     try {
-      const fallbackResponse = await fetch(`${process.env.USERS_SERVICE_URL}/users/menu`, { headers });
+      console.log('🔁 Trying fallback:', fallbackUrl.href);
+      const fallbackResponse = await fetch(fallbackUrl.href, { headers });
 
       if (!fallbackResponse.ok) {
-        throw new Error(`Fallback service also failed with status ${fallbackResponse.status}`);
+        throw new Error(`Fallback service failed with status ${fallbackResponse.status}`);
       }
 
       const fallbackData = await fallbackResponse.json();
-      return res.status(200).json(fallbackData);
+      return res.status(fallbackResponse.status).json(fallbackData);
     } catch (fallbackErr) {
-      console.error('Both services failed:', fallbackErr.message);
+      console.error('❌ Both /menu and fallback failed:', fallbackErr.message);
       return res.status(502).json({ message: 'Les deux services /menu et /users/menu ont échoué' });
     }
   }
@@ -92,5 +99,5 @@ app.get('/menu', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`API Gateway running on http://localhost:${PORT}`);
+  console.log(`✅ API Gateway running on http://localhost:${PORT}`);
 });
